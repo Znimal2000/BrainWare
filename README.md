@@ -5,7 +5,8 @@ I tried to not spend too much time on it so there are still some places that cou
 For example, I could have added more unit tests for Service class and Repository (Data) class. 
 I don't like the piece of getting order list. I know it probably could be written in a more alegent way maybe a stored proc.
 But anyways, if I have to deliver the code to production this barely meets my standard. 
-Thanks
+Thanks!
+
 
 # BrainWare Order List
 
