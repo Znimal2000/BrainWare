@@ -1,3 +1,12 @@
+# Refactor Notes - 2/5/2022
+My coding environment is VS2019, so for me to run this project I had to uninstall and install some nuget packages.
+So if you are not using VS2019 my modification may not run on your machine. Pardon me for doing that.
+I tried to not spend too much time on it so there are still some places that could be refactored more.
+For example, I could have added more unit tests for Service class and Repository (Data) class. 
+I don't like the piece of getting order list. I know it probably could be written in a more alegent way maybe a stored proc.
+But anyways, if I have to deliver the code to production this barely meets my standard. 
+Thanks
+
 # BrainWare Order List
 
 This is a very small sample web application written in a very simplistic manner.
