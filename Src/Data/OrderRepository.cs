@@ -5,6 +5,7 @@ using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Dapper;
 using Model;
 
 namespace Data
@@ -16,77 +17,38 @@ namespace Data
 		{
 			_dbBuilder = new DbConnectionBuilder(dbString);
 		}
+		
 		public List<Order> GetOrderList(int companyId)
 		{
 			using (var connection = _dbBuilder.CreateDbConnection())
 			{
 				connection.Open();
 				// Get the orders
-				var sql1 =
-					"SELECT c.name, o.description, o.order_id FROM company c INNER JOIN [order] o on c.company_id=o.company_id";
+				var sql1 = @"select OT.OrderId, C.[name] as CompanyName, O.[description], OT.OrderTotal from 
+					(SELECT  order_id as OrderId, SUM(price * quantity) AS OrderTotal FROM[OrderProduct]
+				GROUP BY ROLLUP(order_id)) OT inner join[order] O on OT.OrderId = O.order_id
+				inner join Company C on C.company_id = O.company_id
+				where C.company_id = " + companyId;
 
-				var sqlQuery = new SqlCommand(sql1, connection);
-				var reader1 = sqlQuery.ExecuteReader();
 				var values = new List<Order>();
 
-				while (reader1.Read())
-				{
-					var record1 = (IDataRecord)reader1;
+				values.AddRange(connection.Query<Order>(sql1, CommandType.Text));
 
-					values.Add(new Order()
-					{
-						CompanyName = record1.GetString(0),
-						Description = record1.GetString(1),
-						OrderId = record1.GetInt32(2),
-						OrderProducts = new List<OrderProduct>()
-					});
-
-				}
-
-				reader1.Close();
-
-				//Get the order products
-				var sql2 =
-					"SELECT op.price, op.order_id, op.product_id, op.quantity, p.name, p.price FROM orderproduct op INNER JOIN product p on op.product_id=p.product_id";
-				var sqlQuery2 = new SqlCommand(sql2, connection);
-				var reader2 = sqlQuery2.ExecuteReader();
-
-				var values2 = new List<OrderProduct>();
-
-				while (reader2.Read())
-				{
-					var record2 = (IDataRecord)reader2;
-
-					values2.Add(new OrderProduct()
-					{
-						OrderId = record2.GetInt32(1),
-						ProductId = record2.GetInt32(2),
-						Price = record2.GetDecimal(0),
-						Quantity = record2.GetInt32(3),
-						Product = new Product()
-						{
-							Name = record2.GetString(4),
-							Price = record2.GetDecimal(5)
-						}
-					});
-				}
-
-				reader2.Close();
 
 				foreach (var order in values)
 				{
-					foreach (var orderproduct in values2)
-					{
-						if (orderproduct.OrderId != order.OrderId)
-							continue;
+					var sql2 = @"select order_id as OrderId, product_id as ProductId, Price, Quantity from [OrderProduct] where order_id = " + order.OrderId;
+					order.OrderProducts = new List<OrderProduct>();
+					order.OrderProducts.AddRange(connection.Query<OrderProduct>(sql2, CommandType.Text));
 
-						order.OrderProducts.Add(orderproduct);
-						order.OrderTotal = order.OrderTotal + (orderproduct.Price * orderproduct.Quantity);
+					foreach (var orderProduct in order.OrderProducts)
+					{
+						var sql3 = @"select [Name], Price from [Product] where product_id = " + orderProduct.ProductId;
+						orderProduct.Product = connection.Query<Product>(sql3, CommandType.Text).FirstOrDefault();
 					}
 				}
 
 				return values;
-
 			}
 		}
 	}
